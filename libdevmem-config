@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Usage:
+# cc -o prog $CFLAGS `libdevmem-config --cflags` prog.c `libdevmem-config --libs`
+
+### FIXME fix when installed in a different dir!
+mydir=$(readlink -e $(dirname $0))
+
+while [ -n "$1" ]
+do
+	case "$1" in
+      --cflags)
+          # Include path for libdevmem.h
+          echo -n "-I $mydir"
+          # Optional: Customize env vars for physical first and last address:
+          # echo -n ' -DENV_MBASE=\"MY_PCI_BASE_ADDR\" -DENV_MEM_END=\"MY_PCI_LAST_ADDR\"'
+      ;;
+      --libs)
+          # No lib, compile the .c file:
+          echo -n " $mydir/libdevmem.c"
+      ;;
+      *)
+         echo >&2 "Invalid option. Use --libs or --cflags"
+         exit 1
+      ;;
+      esac
+      shift
+done
+
