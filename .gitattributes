@@ -11,3 +11,4 @@
 *.cpp eol=lf
 *.h eol=lf
 *.md eol=lf
+*.py eol=lf
