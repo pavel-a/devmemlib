@@ -1,6 +1,7 @@
 .gitattributes export-ignore
 .gitignore export-ignore
 * text=auto
+* eol=lf
 *.sh eol=lf
 *.ac eol=lf
 *.am eol=lf
