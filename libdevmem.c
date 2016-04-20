@@ -32,8 +32,9 @@
 #define _MEMACCESS_LIB_VER_MJ 1
 #define _MEMACCESS_LIB_VER_MN 0
 
-// These shoud be redefined in makefile, ex "PCI_BASE_ADDRESS"
-// Base phys address - mandatory
+// Names of environment variables to define the memory window:
+// These can be redefined in makefile, ex "PCI_BASE_ADDRESS"
+// Base physical address - mandatory
 #ifndef ENV_MBASE
 #define ENV_MBASE   "DEVMEMBASE"
 #endif
@@ -58,7 +59,7 @@ static unsigned int pagesize;
 static dmem_phys_address_t mbase = (dmem_phys_address_t)(-1L); // start of the real address window
 static dmem_phys_address_t m_end = (dmem_phys_address_t)(-1L); // end of the real address window
 static int g_env_read = 0;
-static struct dmem_mapping_s *g_map = NULL; // singleton is my favorite pattern. duh.
+static struct dmem_mapping_s *g_map = NULL; //TODO revise use of g_map & single mapping
 
 static int get_env_params(void);
 
@@ -81,7 +82,7 @@ int dmem_mapping_map(struct dmem_mapping_s *param)
     if (!param)
         return -1;
 
-    if (g_map) {
+    if (g_map) { //TODO revise use of g_map & single mapping
         printerr("Only one mapping supported and it is already in use.\n");
         return ENOTSUP;
     }
@@ -203,7 +204,7 @@ int dmem_mapping_unmap(struct dmem_mapping_s *param)
     if (mp->fd > 0)
         close(mp->fd);
     mp->fd = -1;
-    g_map = NULL;
+    g_map = NULL; // revise!
     return 0;
 }
 
@@ -228,8 +229,10 @@ int dmem_set_debug(int flags, FILE *dbgfile)
 
 int dmem_finalize(void)
 {
-    if (g_map)
+    if (g_map) {
         dmem_mapping_unmap(g_map);
+        g_map = NULL;
+    }
     return 0;
 }
 
@@ -359,6 +362,7 @@ static void dmem_error(void)
 
 // I/O ops with validation, using the param struct:
 // TODO fix validation, check for add wraparounds!
+// TODO check alignment?
 
 void dmem_write32(struct dmem_mapping_s *dp, dmem_mapping_size_t off, uint32_t v)
 {
@@ -374,7 +378,33 @@ uint32_t dmem_read32(struct dmem_mapping_s *dp, dmem_mapping_size_t off)
     return dmem_read32p((void*)(dp->map_ptr + off));
 }
 
+void dmem_write16(struct dmem_mapping_s *dp, dmem_mapping_size_t off, uint16_t v)
+{
+    if ((off + sizeof(uint16_t)) > dp->map_size)
+        dmem_error();
+    dmem_write16p((void*)(dp->map_ptr + off), v);
+}
 
+uint16_t dmem_read16(struct dmem_mapping_s *dp, dmem_mapping_size_t off)
+{
+    if ((off + sizeof(uint16_t)) > dp->map_size)
+        dmem_error();
+    return dmem_read16p((void*)(dp->map_ptr + off));
+}
+
+void dmem_write8(struct dmem_mapping_s *dp, dmem_mapping_size_t off, uint8_t v)
+{
+    if ((off + sizeof(uint8_t)) > dp->map_size)
+        dmem_error();
+    dmem_write8p((void*)(dp->map_ptr + off), v);
+}
+
+uint8_t dmem_read8(struct dmem_mapping_s *dp, dmem_mapping_size_t off)
+{
+    if ((off + sizeof(uint8_t)) > dp->map_size)
+        dmem_error();
+    return dmem_read8p((void*)(dp->map_ptr + off));
+}
 
 void dmem_write_buf32(struct dmem_mapping_s *dp, const uint32_t *buf, dmem_mapping_size_t off, unsigned cnt)
 {
@@ -392,8 +422,23 @@ void dmem_read_buf32(struct dmem_mapping_s *dp, uint32_t *buf, dmem_mapping_size
     dmem_read_buf32p((void*)(dp->map_ptr + off), buf, cnt);
 }
 
+void dmem_write_buf8(struct dmem_mapping_s *dp, const uint8_t *buf, dmem_mapping_size_t off, unsigned cnt)
+{
+    if ( off > (dp->map_size - cnt * sizeof(uint8_t)) || (off + cnt*sizeof(uint8_t)) > dp->map_size )
+        dmem_error();
 
-// I/O ops via pointer
+    dmem_write_buf8p((void*)(dp->map_ptr + off), buf, cnt);
+}
+
+void dmem_read_buf8(struct dmem_mapping_s *dp, uint8_t *buf, dmem_mapping_size_t off, unsigned cnt)
+{
+    if (off >(dp->map_size - cnt * sizeof(uint8_t)) || (off + cnt*sizeof(uint32_t)) > dp->map_size)
+        dmem_error();
+
+    dmem_read_buf8p((void*)(dp->map_ptr + off), buf, cnt);
+}
+
+// Fast I/O ops via pointer
 void dmem_write32p(void *mp, uint32_t v)
 {
     *(volatile uint32_t*)mp = v;
@@ -439,6 +484,23 @@ void dmem_read_buf32p(void *mp, uint32_t *buf, unsigned cnt)
         *buf++ = dmem_read32p(p++);
     }
 }
+
+void dmem_write_buf8p(void *mp, const uint8_t *buf, unsigned cnt)
+{
+    uint8_t *p = (uint8_t*)mp;
+    for ( ; cnt != 0; cnt--) {
+        dmem_write8p( p++, *buf++);
+    }
+}
+
+void dmem_read_buf8p(void *mp, uint8_t *buf, unsigned cnt)
+{
+    uint8_t *p = (uint8_t*)mp;
+    for ( ;  cnt; cnt-- ) {
+        *buf++ = dmem_read8p(p++);
+    }
+}
+
 
 #endif //LIBDEVMEM_NO_EXTRAS
 

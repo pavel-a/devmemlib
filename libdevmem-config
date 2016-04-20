@@ -10,10 +10,10 @@ while [ -n "$1" ]
 do
 	case "$1" in
       --cflags)
-          # Include path for libdevmem.h
-          echo -n "-I $mydir"
-          # Optional: Customize env vars for physical first and last address:
-          # echo -n ' -DENV_MBASE=\"MY_PCI_BASE_ADDR\" -DENV_MEM_END=\"MY_PCI_LAST_ADDR\"'
+          #  - Env vars used to detect physical base address of CL2400
+          echo -n '-DENV_MBASE=\"CL2400_PCI_BASE_ADDR\" -DENV_MEM_END=\"CL2400_PCI_LAST_ADDR\"'
+          #  - Include path for libdevmem.h
+          echo -n " -I $mydir"
       ;;
       --libs)
           # No lib, compile the .c file:
