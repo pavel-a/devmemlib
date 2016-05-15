@@ -1,7 +1,7 @@
 /**
 * Library for physical memory access like in devmem
 *  
-* pa03 09-apr-2016 
+* pa04 15-may-2016 
 * 32-bit phys addr and usermode
 */
  
@@ -133,7 +133,7 @@ int dmem_mapping_map(struct dmem_mapping_s *param)
         return ERANGE;
     }
 
-    if ( mp->mmap_base + mp->mmap_size >= m_end ) {
+    if ( mp->mmap_end > m_end ) {
         printerr("ERROR: end address > allowed window\n");
         return ERANGE;
     }
