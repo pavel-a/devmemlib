@@ -1,10 +1,10 @@
 /**
 * Library for physical memory access like in devmem
-*  
-* pa04 15-may-2016 
+*
+* pa04 15-may-2016
 * 32-bit phys addr and usermode
 */
- 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -50,7 +50,7 @@
 
 C_ASSERT( sizeof(dmem_phys_address_t) == sizeof(int32_t) );
 
-#define printerr(fmt,...) while(dbgf){ fprintf(dbgf, fmt, ## __VA_ARGS__); fflush(dbgf); break; } 
+#define printerr(fmt,...) while(dbgf){ fprintf(dbgf, fmt, ## __VA_ARGS__); fflush(dbgf); break; }
 
 
 static int f_dbg = 0;
@@ -121,7 +121,7 @@ int dmem_mapping_map(struct dmem_mapping_s *param)
         printerr("ERROR: address < allowed window\n");
         return EINVAL;
     }
-    
+
     // User can specify non-aligned address, we'll find a proper base address:
     mp->mmap_base = pha & ~((typeof(pha))pagesize-1);
     mp->mmap_offset = pha - mp->mmap_base;
@@ -137,7 +137,7 @@ int dmem_mapping_map(struct dmem_mapping_s *param)
         printerr("ERROR: end address > allowed window\n");
         return ERANGE;
     }
-    
+
 #if 0 // for 32-bit version this already covered
     if (sizeof(mp->mmap_base) > sizeof(uint32_t)) {
       // Usermode type off_t can be 32 bit even if kernel phys. address is 64-bit. Consider mmap2() instead of this check
@@ -157,18 +157,18 @@ int dmem_mapping_map(struct dmem_mapping_s *param)
         printerr("Error opening /dev/mem (%d) : %s\n", errno, strerror(errno));
         return errno;
     }
-    
+
     if (f_dbg) {
         printerr("/dev/mem opened.\n");
     }
 
     mmap_flags = PROT_READ | PROT_WRITE;
     if (param->flags & MF_READONLY) mmap_flags = PROT_READ;
-    mp->mmap_va = mmap(0, 
+    mp->mmap_va = mmap(0,
                     mp->mmap_size,
                     mmap_flags,
                     MAP_SHARED,
-                    mp->fd, 
+                    mp->fd,
                     mp->mmap_base);
 
     if ( (intptr_t)mp->mmap_va == (intptr_t)-1 ) {
@@ -184,7 +184,7 @@ int dmem_mapping_map(struct dmem_mapping_s *param)
         printerr("Memory mapped at virt. addr [%p - %p[\n", mp->mmap_va, mp->mmap_va_end);
         printerr("User addr. range: [%p - %p[\n", param->map_ptr, (char*)param->map_ptr + param->map_size - 1);
     }
-    
+
     return 0;
 }
 
@@ -200,7 +200,7 @@ int dmem_mapping_unmap(struct dmem_mapping_s *param)
     }
     mp->mmap_base = (intptr_t)-1;
     mp->mmap_va = NULL;
-    
+
     if (mp->fd > 0)
         close(mp->fd);
     mp->fd = -1;
@@ -258,7 +258,7 @@ static int get_env_params(void)
     char *endp = NULL;
     int errors = 0;
     int fPrint = f_dbg;
-    
+
     if (!dbgf) {
         dbgf = stderr; // revise?
     }
@@ -271,19 +271,19 @@ static int get_env_params(void)
         }
 
         if (strstr(p, "-NDM")) { // kill switch
-            fprintf(stderr, 
+            fprintf(stderr,
                 "ERROR: Env. parameter in %s forbids use of this memory access module\n", ENV_PARAMS);
             return -1;
         }
     }
     //else if (fPrint)
     //    printf("%s not set\n", ENV_PARAMS);
-        
+
     if (fPrint)
         printf("\n\nlibdevmem v.%u.%u (32-bit) Environment parameters:\n",
             _MEMACCESS_LIB_VER_MJ, _MEMACCESS_LIB_VER_MN);
 
-    if (fPrint && p)    
+    if (fPrint && p)
         printf("%s = \"%s\"\n", ENV_PARAMS, p);
 
     p = getenv(ENV_MBASE);
@@ -306,7 +306,7 @@ static int get_env_params(void)
     }
     else if (fPrint)
         printf("%s not set\n", ENV_MBASE);
-    
+
     p = getenv(ENV_MEM_END);
     if (p) {
         errno = 0;
@@ -327,12 +327,12 @@ static int get_env_params(void)
     }
     else if (fPrint)
         printf("%s not set\n", ENV_MBASE);
-        
+
     if (m_end <= mbase) {
         printerr("Error: end memory %s <= base %s\n", ENV_MEM_END, ENV_MBASE);
         errors++;
-    }    
-    
+    }
+
     if (errors) {
         if ( fPrint ) {
             printerr("Errors found in environment parameters\n");
