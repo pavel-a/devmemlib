@@ -1,10 +1,10 @@
 /**
 * Library for physical memory access like in devmem
-*
-* pa04 15-may-2016
+*  
+* pa05 16-may-2016 
 * 32-bit phys addr and usermode
 */
-
+ 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -50,7 +50,7 @@
 
 C_ASSERT( sizeof(dmem_phys_address_t) == sizeof(int32_t) );
 
-#define printerr(fmt,...) while(dbgf){ fprintf(dbgf, fmt, ## __VA_ARGS__); fflush(dbgf); break; }
+#define printerr(fmt,...) while(dbgf){ fprintf(dbgf, fmt, ## __VA_ARGS__); fflush(dbgf); break; } 
 
 
 static int f_dbg = 0;
@@ -64,7 +64,7 @@ static struct dmem_mapping_s *g_map = NULL; //TODO revise use of g_map & single 
 static int get_env_params(void);
 
 struct mapping_priv_s {
-    int fd;          // 0 when not initialized, -1 = invalid
+    int fd;             // 0 when not initialized, -1 = invalid
     dmem_phys_address_t mmap_base; // adjusted phys start addr
     dmem_phys_address_t mmap_end;  // adjusted  phys end addr
     void *mmap_va;      // mapped va
@@ -121,7 +121,7 @@ int dmem_mapping_map(struct dmem_mapping_s *param)
         printerr("ERROR: address < allowed window\n");
         return EINVAL;
     }
-
+    
     // User can specify non-aligned address, we'll find a proper base address:
     mp->mmap_base = pha & ~((typeof(pha))pagesize-1);
     mp->mmap_offset = pha - mp->mmap_base;
@@ -137,7 +137,7 @@ int dmem_mapping_map(struct dmem_mapping_s *param)
         printerr("ERROR: end address > allowed window\n");
         return ERANGE;
     }
-
+    
 #if 0 // for 32-bit version this already covered
     if (sizeof(mp->mmap_base) > sizeof(uint32_t)) {
       // Usermode type off_t can be 32 bit even if kernel phys. address is 64-bit. Consider mmap2() instead of this check
@@ -157,18 +157,18 @@ int dmem_mapping_map(struct dmem_mapping_s *param)
         printerr("Error opening /dev/mem (%d) : %s\n", errno, strerror(errno));
         return errno;
     }
-
+    
     if (f_dbg) {
         printerr("/dev/mem opened.\n");
     }
 
     mmap_flags = PROT_READ | PROT_WRITE;
     if (param->flags & MF_READONLY) mmap_flags = PROT_READ;
-    mp->mmap_va = mmap(0,
+    mp->mmap_va = mmap(0, 
                     mp->mmap_size,
                     mmap_flags,
                     MAP_SHARED,
-                    mp->fd,
+                    mp->fd, 
                     mp->mmap_base);
 
     if ( (intptr_t)mp->mmap_va == (intptr_t)-1 ) {
@@ -184,7 +184,7 @@ int dmem_mapping_map(struct dmem_mapping_s *param)
         printerr("Memory mapped at virt. addr [%p - %p[\n", mp->mmap_va, mp->mmap_va_end);
         printerr("User addr. range: [%p - %p[\n", param->map_ptr, (char*)param->map_ptr + param->map_size - 1);
     }
-
+    
     return 0;
 }
 
@@ -200,7 +200,7 @@ int dmem_mapping_unmap(struct dmem_mapping_s *param)
     }
     mp->mmap_base = (intptr_t)-1;
     mp->mmap_va = NULL;
-
+    
     if (mp->fd > 0)
         close(mp->fd);
     mp->fd = -1;
@@ -219,6 +219,18 @@ int dmem__init_(int addrsize, int mapsize, void *reserved)
         return err;
     return 0;
 }
+
+
+void *dmem_get_pointer( struct dmem_mapping_s *dp, dmem_mapping_size_t off,
+                        uint32_t size)
+{
+    if (((off + size) > dp->map_size) || ((off + size) <= off))
+        return NULL;
+    if (!dp->map_ptr)
+        return NULL;
+    return dp->map_ptr + off;
+}
+
 
 int dmem_set_debug(int flags, FILE *dbgfile)
 {
@@ -258,7 +270,7 @@ static int get_env_params(void)
     char *endp = NULL;
     int errors = 0;
     int fPrint = f_dbg;
-
+    
     if (!dbgf) {
         dbgf = stderr; // revise?
     }
@@ -271,19 +283,19 @@ static int get_env_params(void)
         }
 
         if (strstr(p, "-NDM")) { // kill switch
-            fprintf(stderr,
+            fprintf(stderr, 
                 "ERROR: Env. parameter in %s forbids use of this memory access module\n", ENV_PARAMS);
             return -1;
         }
     }
     //else if (fPrint)
     //    printf("%s not set\n", ENV_PARAMS);
-
+        
     if (fPrint)
         printf("\n\nlibdevmem v.%u.%u (32-bit) Environment parameters:\n",
             _MEMACCESS_LIB_VER_MJ, _MEMACCESS_LIB_VER_MN);
 
-    if (fPrint && p)
+    if (fPrint && p)    
         printf("%s = \"%s\"\n", ENV_PARAMS, p);
 
     p = getenv(ENV_MBASE);
@@ -306,7 +318,7 @@ static int get_env_params(void)
     }
     else if (fPrint)
         printf("%s not set\n", ENV_MBASE);
-
+    
     p = getenv(ENV_MEM_END);
     if (p) {
         errno = 0;
@@ -327,12 +339,12 @@ static int get_env_params(void)
     }
     else if (fPrint)
         printf("%s not set\n", ENV_MBASE);
-
+        
     if (m_end <= mbase) {
         printerr("Error: end memory %s <= base %s\n", ENV_MEM_END, ENV_MBASE);
         errors++;
-    }
-
+    }    
+    
     if (errors) {
         if ( fPrint ) {
             printerr("Errors found in environment parameters\n");
@@ -351,12 +363,101 @@ static int get_env_params(void)
 // Add memory barriers, flushes etc. if needed for specific arch.
 //============================================================================
 
-
+// Error hook:
 static void dmem_error(void)
 {
-    printf("\nError: invalid address or size in dmem... call\n");
+    printf("\nlibdevmem: Invalid address or size in dmem... call\n");
     //set debug break here
-    abort(); // or exit(3) ... or longjmp...
+    abort(); // or send sigsegv to myself? or user callback?
+}
+
+
+// Fast I/O ops via pointer
+// Pointers can be obtained from dmem_get_pointer()
+void dmem_write32p(void *mp, uint32_t v)
+{
+    *(volatile uint32_t*)mp = v;
+}
+
+void dmem_write16p(void *mp, uint16_t v)
+{
+    *(volatile uint16_t*)mp = v;
+}
+
+void dmem_write8p(void *mp, uint8_t v)
+{
+    *(volatile uint8_t*)mp = v;
+}
+
+uint32_t dmem_read32p(void *mp)
+{
+    return *(volatile uint32_t*)mp;
+}
+
+uint16_t dmem_read16p(void *mp)
+{
+    return *(volatile uint16_t*)mp;
+}
+
+uint8_t dmem_read8p(void *mp)
+{
+    return *(volatile uint8_t*)mp;
+}
+
+void dmem_write_buf32p(void *mp, const uint32_t *buf, unsigned cnt)
+{
+    uint32_t *p = (uint32_t*)mp;
+    for ( ; cnt != 0; cnt--) {
+        dmem_write32p( p++, *buf++);
+    }
+}
+
+void dmem_read_buf32p(void *mp, uint32_t *buf, unsigned cnt)
+{
+    uint32_t *p = (uint32_t*)mp;
+    for ( ;  cnt; cnt-- ) {
+        *buf++ = dmem_read32p(p++);
+    }
+}
+
+void dmem_write_buf8p(void *mp, const uint8_t *buf, unsigned cnt)
+{
+    uint8_t *p = (uint8_t*)mp;
+    for ( ; cnt != 0; cnt--) {
+        dmem_write8p( p++, *buf++);
+    }
+}
+
+void dmem_read_buf8p(void *mp, uint8_t *buf, unsigned cnt)
+{
+    uint8_t *p = (uint8_t*)mp;
+    for ( ;  cnt; cnt-- ) {
+        *buf++ = dmem_read8p(p++);
+    }
+}
+
+void dmem_fill_buf32p(void *mp, unsigned cnt, uint32_t v)
+{
+    uint32_t *p = (uint32_t*)mp;
+    for ( ;  cnt; cnt-- ) {
+        dmem_write32p( p++, v);
+    }
+}
+
+void dmem_fill_buf16p(void *mp, unsigned cnt, uint16_t v)
+{
+    uint16_t *p = (uint16_t*)mp;
+    for ( ;  cnt; cnt-- ) {
+        dmem_write16p( p++, v);
+    }
+}
+
+void dmem_fill_buf8p(void *mp, unsigned cnt, uint8_t v)
+{
+    uint8_t *p = (uint8_t*)mp;
+    for ( ;  cnt; cnt-- ) {
+        dmem_write8p( p++, v);
+    }
 }
 
 
@@ -438,69 +539,29 @@ void dmem_read_buf8(struct dmem_mapping_s *dp, uint8_t *buf, dmem_mapping_size_t
     dmem_read_buf8p((void*)(dp->map_ptr + off), buf, cnt);
 }
 
-// Fast I/O ops via pointer
-void dmem_write32p(void *mp, uint32_t v)
+void dmem_fill_buf32(dmem_mapping_hnd_t dp, dmem_mapping_size_t off, unsigned cnt, uint32_t v)
 {
-    *(volatile uint32_t*)mp = v;
+    void *p = dmem_get_pointer(dp, off, cnt*sizeof(uint32_t));
+    if (!p)
+       dmem_error();
+    dmem_fill_buf32p(p, cnt, v);
 }
 
-void dmem_write16p(void *mp, uint16_t v)
+void dmem_fill_buf16(dmem_mapping_hnd_t dp, dmem_mapping_size_t off, unsigned cnt, uint16_t v)
 {
-    *(volatile uint16_t*)mp = v;
+    void *p = dmem_get_pointer(dp, off, cnt*sizeof(uint16_t));
+    if (!p)
+       dmem_error();
+    dmem_fill_buf16p(p, cnt, v);
 }
 
-void dmem_write8p(void *mp, uint8_t v)
+void dmem_fill_buf8(dmem_mapping_hnd_t dp, dmem_mapping_size_t off, unsigned cnt, uint8_t v)
 {
-    *(volatile uint8_t*)mp = v;
+    void *p = dmem_get_pointer(dp, off, cnt*sizeof(uint8_t));
+    if (!p)
+       dmem_error();
+    dmem_fill_buf8p(p, cnt, v);
 }
-
-uint32_t dmem_read32p(void *mp)
-{
-    return *(volatile uint32_t*)mp;
-}
-
-uint16_t dmem_read16p(void *mp)
-{
-    return *(volatile uint16_t*)mp;
-}
-
-uint8_t dmem_read8p(void *mp)
-{
-    return *(volatile uint8_t*)mp;
-}
-
-void dmem_write_buf32p(void *mp, const uint32_t *buf, unsigned cnt)
-{
-    uint32_t *p = (uint32_t*)mp;
-    for ( ; cnt != 0; cnt--) {
-        dmem_write32p( p++, *buf++);
-    }
-}
-
-void dmem_read_buf32p(void *mp, uint32_t *buf, unsigned cnt)
-{
-    uint32_t *p = (uint32_t*)mp;
-    for ( ;  cnt; cnt-- ) {
-        *buf++ = dmem_read32p(p++);
-    }
-}
-
-void dmem_write_buf8p(void *mp, const uint8_t *buf, unsigned cnt)
-{
-    uint8_t *p = (uint8_t*)mp;
-    for ( ; cnt != 0; cnt--) {
-        dmem_write8p( p++, *buf++);
-    }
-}
-
-void dmem_read_buf8p(void *mp, uint8_t *buf, unsigned cnt)
-{
-    uint8_t *p = (uint8_t*)mp;
-    for ( ;  cnt; cnt-- ) {
-        *buf++ = dmem_read8p(p++);
-    }
-}
-
 
 #endif //LIBDEVMEM_NO_EXTRAS
 
