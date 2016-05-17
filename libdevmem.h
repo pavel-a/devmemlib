@@ -1,16 +1,16 @@
 /**
 * Library for physical memory access like in devmem
-* 32-bit physical address version 
+* 32-bit physical address version
 *
-* pa03b 16-may-2016 
+* pa03b 16-may-2016
 */
 
 #ifndef libdevmem_h_
 #define libdevmem_h_
 
-#include <stdint.h> 
+#include <stdint.h>
 #include <stdio.h> /* for debug prints to FILE */
- 
+
 
 typedef uint32_t dmem_phys_address_t;
 typedef uint32_t dmem_mapping_size_t;
@@ -27,12 +27,12 @@ enum dmem_mapping_flags {
     MF_ABSOLUTE = 0x01, // Absolute physical address, not offset
     MF_READONLY = 0x02,
 };
- 
+
 typedef struct dmem_mapping_s *dmem_mapping_hnd_t;
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 // Initialize:
 // int dmem_init(void);
@@ -93,8 +93,8 @@ void      dmem_fill_buf8(dmem_mapping_hnd_t dp,  dmem_mapping_size_t off, unsign
 void      dmem_write32p(void *mp, uint32_t v);
 void      dmem_write16p(void *mp, uint16_t v);
 void      dmem_write8p( void *mp, uint8_t v);
-uint32_t  dmem_read32p( void *mp); 
-uint16_t  dmem_read16p( void *mp); 
+uint32_t  dmem_read32p( void *mp);
+uint16_t  dmem_read16p( void *mp);
 uint8_t   dmem_read8p(  void *mp);
 
 void      dmem_write_buf32p(void *mp, const uint32_t *buf, unsigned cnt);
@@ -111,6 +111,6 @@ void      dmem_fill_buf8p(void *mp,  unsigned cnt, uint8_t v);
 
 #ifdef __cplusplus
 }
-#endif 
+#endif
 
 #endif /* libdevmem_h_ */
