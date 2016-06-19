@@ -338,7 +338,7 @@ static int get_env_params(void)
         }
     }
     else if (fPrint)
-        printf("%s not set\n", ENV_MBASE);
+        printf("%s not set\n", ENV_MEM_END);
 
     if (m_end <= mbase) {
         printerr("Error: end memory %s <= base %s\n", ENV_MEM_END, ENV_MBASE);
