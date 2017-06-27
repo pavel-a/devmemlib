@@ -36,8 +36,8 @@ def getPCIdeviceBars(path) :
    barlist = []
    with open(path + "/resource", 'r') as f:
      for s in f:
-       a = string.split(s)
-       bar_start, bar_end = long(a[0],0), long(a[1],0)
+       a = s.split()
+       bar_start, bar_end = int(a[0],0), int(a[1],0)
        # no idea what is in a[2]
        #can be empty bar! if bar_start == 0 : break
        if bar_start == 0 and bar_end == 0:
