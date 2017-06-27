@@ -1,14 +1,11 @@
 """
-Module for accessing the chip shared memory via the PCI BAR
+Module for accessing chip shared memory via the PCI BAR
 
-Variant with several PCI instances.
-Instances are accessed only with relative addresses, no more implicit rebase.
-
-All reads and writes must be done in one hardware cycle, like in C.
+Requires root.
+All reads and writes should be in one hardware cycle, like in C.
 This is ensured by using ctypes pointers, it should behave the closest to plain C.
-Assume we are root.
 
-26-jun-2017 pa03 for palladium (only BAR0, no CFGPGAs).
+26-jun-2017 pa03
 19-apr-2016 pa02
 """
 
@@ -20,7 +17,7 @@ import pcidev_sysfs as mypci
 
 class Cmmdev:
     """ Represents device memory mapping """
-    
+
     def __init__(self, sysfsPath, barNum, winsize):
         """ Create a mapping """
         self.mm_base = 0    # Phys. addr.
@@ -52,7 +49,7 @@ class Cmmdev:
         if self.mm_devf is not None :
             self.mm_devf.close()
             self.mm_devf = None
-        self.mm = None    
+        self.mm = None
         self.mm_base = 0
 
     def mm_unmap(self) :
@@ -103,15 +100,15 @@ class Cmmdev:
 
     def getSize(self): return self.mm_winsize
 
-    def printx(self, addr, cnt=1):
-        """ nice hex print """
-        for i in range (0,cnt):
-            print("%8.8X" % self.memr4(i*4 + addr))
+    def printx(self, offs, cnt=1):
+        """ Print cnt words from given offset, in hex """
+        for i in range (cnt):
+            print("%8.8X" % self.memr4(i*4 + offs))
 
-    def memfill4(self, addr, val, cnt=1):
-        """ Fill memory with u32 value """
-        for i in range (0,cnt):
-            self.memw4(i*4 + addr, val)
+    def memfill4(self, offs, val, cnt=1):
+        """ Fill memory with 32-bit value from offs, cnt words"""
+        for i in range (cnt):
+            self.memw4(i*4 + offs, val)
 
 ##################################################################
 
@@ -119,11 +116,10 @@ VENDORID = 0x1d69
 DEVID    = 0x2401
 DEVID2   = 0x2400
 WIN_SIZE = 0x800000
-MM = None        
-        
+MM = None
+
 def mm_test() :
   global MM
-  # Play a singleton
   if MM: print("pymem - already initialized"); return
 
   """ Find and map the PCI device BAR. """
@@ -136,7 +132,7 @@ def mm_test() :
   #path2 = mypci.getPCIdeviceSysfsPath(vendor_id=VENDORID, dev_id=DEVID2)
   #MM2 = Cmmdev(path2, 0, WIN_SIZE)
 
-  print("pymem: Phys mem base=%#X size=%#X" % (MM.mm_base, MM.mm_winsize), MM)
+  print( MM )
 
 # MAIN
 #dpath="/sys/bus/pci/devices/0000:00:08.0"
