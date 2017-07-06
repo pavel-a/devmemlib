@@ -1,0 +1,49 @@
+
+This is Python library to access PCI device BARs and config space via sysfs.
+
+Works with Python 2.7 and 3.5.
+For Linux only. Requires root.
+
+TODO: Support also mapping /dev/mem by offset. add another ctor or whatever.
+TODO: Support several instances of devices with same PCI HW ID (code already exists in pcidev_sysfs.py)
+
+## Methods in pymem module
+
+ * Cmmdev(devpath, bar_num, winsize) - Constructor. Returns a mapping object for given PCI device and BAR
+ 
+
+Methods of the mapping object:
+
+ * read32(offs)      - read 32-bit value from offset offs
+ * write32(offs, v)  - write 32-bit value to offset offs
+ * read16(offs)      - read 16-bit value from offset offs
+ * write16(offs, v)  - write 16-bit value to offset offs
+ * read8(offs)       - read 8-bit value from offset offs
+ * write8(offs, v)   - write 8-bit value to offset offs
+ * memfill32(offs, val, cnt=1) - fill memory (32-bit)
+ * memr(offs)        - same as read32
+ * memw(offs, v)     - same as write32
+
+The offset must be aligned on the operation size (4 or 2 bytes).
+ 
+ 
+## Example
+
+    import pymem as pm, pcidev_sysfs
+
+    devpath = pcidev_sysfs.getPCIdeviceSysfsPath(vendor_id=0x1234, dev_id=0x5678)
+    assert devpath
+
+    MM = pm.Cmmdev(devpath, 0, 0x10000)
+    assert MM
+
+    if MM.read32(0) & 0x1 :
+        MM.write32(4, 42)
+    MM.memfill32(0x20, 0xFF, 16)
+
+
+See also: test in pymem.py. To run:  python -m pymem
+
+~~
+Version 27-jun-2017 pa04
+
